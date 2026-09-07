@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Game Maze Quiz Monster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+<!-- MathJax: agar soal bisa menampilkan rumus matematika. Tulis rumus di Sheet Soal
+     memakai tanda $...$ (contoh: $x^2 + 2x - 3 = 0$) atau $$...$$ untuk rumus besar. -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: { fontCache: 'global' },
+    options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] }
+  };
+</script>
+<script id="MathJax-script" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js" defer></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  :root {
+    --void: #05020c;
+    --stone-1: #120a24;
+    --stone-2: #1c1032;
+    --stone-edge: #3a2560;
+    --ember: #ff7a45;
+    --ember-dim: #c2521f;
+    --arcane: #a855f7;
+    --arcane-dim: #6d28d9;
+    --gold: #fbbf24;
+    --blood: #ef4444;
+    --parchment: #ece2c6;
+    --parchment-dim: #a89a78;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(168,85,247,0.14), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 15% 90%, rgba(255,122,69,0.10), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 85% 85%, rgba(255,122,69,0.08), transparent 60%),
+      linear-gradient(180deg, var(--void), #0a0414 55%, var(--void));
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: var(--parchment);
+    padding: 14px 12px 22px;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0px, transparent 1px, transparent 3px);
+  }
+
+  #ambientEmbers {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .ember-particle {
+    position: absolute;
+    bottom: -20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,180,110,0.95), rgba(255,110,40,0.4) 60%, transparent 75%);
+    filter: blur(0.3px);
+    animation-name: emberRise;
+    animation-timing-function: ease-in;
+    animation-iteration-count: infinite;
+  }
+  @keyframes emberRise {
+    0% { transform: translateY(0) translateX(0); opacity: 0; }
+    8% { opacity: 0.9; }
+    50% { transform: translateY(-52vh) translateX(12px); opacity: 0.7; }
+    100% { transform: translateY(-102vh) translateX(-10px); opacity: 0; }
+  }
+
+  #dangerVignette {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(220,38,38,0.35) 100%);
+  }
+  #dangerVignette.active {
+    opacity: 1;
+    animation: dangerPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes dangerPulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 0.95; }
+  }
+
+  h1 {
+    margin: 4px 0 4px 0;
+    font-family: 'Cinzel Decorative', 'Cinzel', serif;
+    font-weight: 700;
+    font-size: clamp(19px, 5.4vw, 30px);
+    letter-spacing: 1.5px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(180deg, #fff2d6, var(--gold) 45%, var(--ember) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(255,122,69,0.55)) drop-shadow(0 0 28px rgba(168,85,247,0.25));
+  }
+  h1 .torch {
+    display: inline-block;
+    filter: drop-shadow(0 0 8px rgba(255,150,60,0.9));
+    animation: torchFlicker 1.8s ease-in-out infinite;
+  }
+  h1 .torch:last-child { animation-delay: 0.4s; }
+  @keyframes torchFlicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+    30% { transform: scale(1.08) rotate(2deg); opacity: 0.85; }
+    60% { transform: scale(0.96) rotate(-1deg); opacity: 1; }
+  }
+
+  #subtitle {
+    text-align: center;
+    font-size: clamp(10px, 2.6vw, 12px);
+    color: var(--parchment-dim);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 2;
+  }
+  #playerBadge {
+    text-align: center;
+    font-size: clamp(11px, 2.8vw, 13px);
+    color: var(--gold);
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 2;
+    background: rgba(28,16,50,0.55);
+    border: 1px solid var(--stone-edge);
+    border-radius: 20px;
+    padding: 6px 14px;
+    display: inline-block;
+  }
+
+  /* ===================== HALAMAN AWAL ===================== */
+  #startScreen {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 440px;
+    background: linear-gradient(160deg, #241338, #140a22);
+    border: 1px solid var(--stone-edge);
+    border-radius: 16px;
+    padding: 22px 22px 26px;
+    box-shadow: 0 0 0 1px rgba(251,191,36,0.12), 0 0 45px rgba(168,85,247,0.22), 0 20px 50px rgba(0,0,0,0.6);
+    margin-top: 6px;
+  }
+  .field-group {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+  .field-group label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color: var(--parchment-dim);
+    margin-bottom: 6px;
+  }
+  .field-group select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--stone-edge);
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1));
+    color: var(--parchment);
+    font-size: 15px;
+    cursor: pointer;
+    min-height: 46px;
+  }
+  .field-group select:disabled { opacity: 0.5; cursor: not-allowed; }
+  #btnMulai {
+    width: 100%;
+    background: linear-gradient(180deg, var(--ember), var(--ember-dim));
+    color: #241002;
+    font-weight: 700;
+    border: none;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 6px;
+    min-height: 50px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.15) inset, 0 6px 16px rgba(255,122,69,0.35);
+    transition: transform 0.12s, box-shadow 0.2s, opacity 0.2s;
+  }
+  #btnMulai:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+  #btnMulai:not(:disabled):active { transform: scale(0.97); }
+  #startStatus {
+    text-align: center;
+    font-size: 13px;
+    color: var(--parchment-dim);
+    min-height: 20px;
+    margin-top: 10px;
+  }
+  #startStatus.error { color: #f87171; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(236,226,198,0.25);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #gameScreen { display: none; flex-direction: column; align-items: center; width: 100%; }
+
+  #info {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: clamp(11px, 3vw, 14px);
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+  #info span {
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1));
+    padding: 6px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--stone-edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 3px 8px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    color: var(--parchment);
+    transition: opacity 0.25s ease;
+  }
+  #hearts { font-size: clamp(14px, 4vw, 18px); letter-spacing: 2px; transition: filter 0.3s; }
+  #hearts.low { animation: heartBeat 0.9s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(239,68,68,0.9)); }
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    25% { transform: scale(1.18); }
+    40% { transform: scale(1); }
+  }
+  #muteBtn, #fullscreenBtn {
+    cursor: pointer;
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1)) !important;
+  }
+
+  /* ===================== MODE ARENA FULLSCREEN ===================== */
+  body.arena-fullscreen {
+    padding: 0 !important;
+    overflow: hidden;
+  }
+  body.arena-fullscreen h1,
+  body.arena-fullscreen #subtitle,
+  body.arena-fullscreen #playerBadge,
+  body.arena-fullscreen .controls,
+  body.arena-fullscreen .hint {
+    display: none !important;
+  }
+  body.arena-fullscreen #gameScreen {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+  body.arena-fullscreen #info {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    margin: 0;
+    background: rgba(5,2,12,0.6);
+    padding: 8px 10px;
+    border-radius: 14px;
+    backdrop-filter: blur(3px);
+    max-width: 94vw;
+  }
+  /* Nyawa, Waktu, Langkah, Streak & Skor dibuat transparan (20%) saat fullscreen,
+     supaya tidak menutupi arena. Tombol mute & fullscreen tetap terlihat jelas. */
+  body.arena-fullscreen #info span:not(#muteBtn):not(#fullscreenBtn) {
+    opacity: 0.2;
+  }
+  body.arena-fullscreen #info span:not(#muteBtn):not(#fullscreenBtn):active,
+  body.arena-fullscreen #info:hover span:not(#muteBtn):not(#fullscreenBtn) {
+    opacity: 0.6;
+  }
+  body.arena-fullscreen #canvasWrap {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    animation: none;
+    box-shadow: none;
+  }
+  body.arena-fullscreen canvas {
+    border-radius: 0;
+    border: none;
+  }
+  body.arena-fullscreen #msg {
+    position: fixed;
+    top: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    margin: 0;
+    background: rgba(5,2,12,0.65);
+    padding: 8px 18px;
+    border-radius: 12px;
+    max-width: 92vw;
+  }
+  body.arena-fullscreen #dpad.enabled {
+    position: fixed;
+    bottom: 14px;
+    right: 14px;
+    left: auto;
+    z-index: 60;
+    background: rgba(5,2,12,0.45);
+    padding: 8px;
+    border-radius: 16px;
+    margin: 0;
+  }
+
+  #canvasWrap {
+    position: relative;
+    z-index: 2;
+    padding: 10px;
+    border-radius: 16px;
+    background: linear-gradient(160deg, #2a1a44, #150a26);
+    box-shadow:
+      0 0 0 1px rgba(168,85,247,0.25),
+      0 0 30px rgba(168,85,247,0.18),
+      0 14px 34px rgba(0,0,0,0.65),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: frameGlow 4s ease-in-out infinite;
+  }
+  @keyframes frameGlow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(168,85,247,0.25), 0 0 30px rgba(168,85,247,0.18), 0 14px 34px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05); }
+    50% { box-shadow: 0 0 0 1px rgba(255,122,69,0.3), 0 0 38px rgba(255,122,69,0.22), 0 14px 34px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.05); }
+  }
+  canvas {
+    background: #0a0716;
+    border: 2px solid var(--stone-edge);
+    border-radius: 10px;
+    display: block;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+  }
+
+  .controls {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 2;
+  }
+  button.mainbtn {
+    background: linear-gradient(180deg, var(--ember), var(--ember-dim));
+    color: #241002;
+    font-weight: 700;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.2s;
+    touch-action: manipulation;
+    min-height: 46px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.15) inset, 0 6px 16px rgba(255,122,69,0.35);
+  }
+  button.mainbtn.secondary {
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1));
+    color: var(--parchment);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px rgba(0,0,0,0.5);
+    border: 1px solid var(--stone-edge);
+  }
+  button.mainbtn:hover { box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset, 0 6px 22px rgba(255,122,69,0.55); }
+  button.mainbtn:active { transform: scale(0.96); }
+
+  #msg {
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: bold;
+    min-height: 26px;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .win { color: #4ade80; text-shadow: 0 0 12px rgba(74,222,128,0.7); }
+  .lose { color: #f87171; text-shadow: 0 0 12px rgba(248,113,113,0.7); }
+  .info-text { color: var(--gold); }
+  .hint {
+    margin-top: 10px;
+    font-size: clamp(11px, 3vw, 13px);
+    color: var(--parchment-dim);
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.6;
+    position: relative;
+    z-index: 2;
+  }
+  #dpad {
+    display: none;
+    margin-top: 18px;
+    grid-template-columns: 64px 64px 64px;
+    grid-template-rows: 64px 64px 64px;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+  }
+  #dpad button {
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+    padding: 0;
+    border-radius: 14px;
+    touch-action: manipulation;
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1));
+    color: var(--gold);
+    border: 1px solid var(--stone-edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 10px rgba(0,0,0,0.5);
+  }
+  #dpad button:active { background: var(--stone-edge); }
+  @media (max-width: 700px), (pointer: coarse) {
+    #dpad.enabled { display: grid; }
+  }
+  @media (max-width: 400px) {
+    #info { gap: 6px; }
+    #info span { padding: 4px 8px; }
+    .controls { flex-direction: column; }
+  }
+
+  /* ===== FX LAYER (di atas semuanya) ===== */
+  #fxLayer {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fx-flash-hit {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(239,68,68,0.75), rgba(239,68,68,0.15) 55%, transparent 75%);
+    animation: fxFlashFade 0.55s ease-out forwards;
+  }
+  @keyframes fxFlashFade { 0% { opacity: 1; } 100% { opacity: 0; } }
+  .fx-burst {
+    position: absolute;
+    font-size: 90px;
+    animation: fxBurstPop 0.6s cubic-bezier(.34,1.56,.64,1) forwards;
+    filter: drop-shadow(0 0 20px rgba(239,68,68,0.9));
+  }
+  @keyframes fxBurstPop {
+    0% { transform: scale(0.2) rotate(-15deg); opacity: 0; }
+    40% { transform: scale(1.3) rotate(8deg); opacity: 1; }
+    100% { transform: scale(1.6) rotate(0deg); opacity: 0; }
+  }
+  .shake { animation: fxShake 0.5s ease-in-out; }
+  @keyframes fxShake {
+    10%, 90% { transform: translateX(-8px) translateY(2px); }
+    20%, 80% { transform: translateX(9px) translateY(-2px); }
+    30%, 50%, 70% { transform: translateX(-14px) translateY(3px); }
+    40%, 60% { transform: translateX(14px) translateY(-3px); }
+    100% { transform: translateX(0); }
+  }
+  .fx-door {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    animation: fxDoorPop 1.1s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .fx-door-icon { font-size: 80px; filter: drop-shadow(0 0 25px currentColor); }
+  .fx-door-text {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 700;
+    padding: 7px 20px;
+    border-radius: 10px;
+    background: rgba(10,4,20,0.8);
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .fx-door-success .fx-door-text { color: #4ade80; text-shadow: 0 0 10px rgba(74,222,128,0.8); }
+  .fx-door-fail .fx-door-text { color: #fb923c; text-shadow: 0 0 10px rgba(251,146,60,0.8); }
+  @keyframes fxDoorPop {
+    0% { transform: scale(0.3) translateY(20px); opacity: 0; }
+    25% { transform: scale(1.25) translateY(0); opacity: 1; }
+    35% { transform: scale(1) translateY(0); opacity: 1; }
+    80% { transform: scale(1) translateY(0); opacity: 1; }
+    100% { transform: scale(0.9) translateY(-25px); opacity: 0; }
+  }
+  .fx-spark { position: absolute; font-size: 26px; animation: fxSparkFly 0.9s ease-out forwards; }
+  @keyframes fxSparkFly {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.4); opacity: 0; }
+  }
+  .fx-gold-particle {
+    position: absolute;
+    top: -40px;
+    animation-name: fxGoldFall;
+    animation-timing-function: ease-in;
+    animation-fill-mode: forwards;
+    filter: drop-shadow(0 0 6px rgba(250,204,21,0.9));
+  }
+  @keyframes fxGoldFall {
+    0% { transform: translateY(-40px) translateX(0) rotate(0deg); opacity: 1; }
+    50% { transform: translateY(50vh) translateX(15px) rotate(180deg); opacity: 1; }
+    100% { transform: translateY(105vh) translateX(-10px) rotate(360deg); opacity: 0.85; }
+  }
+  .fx-victory-center { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 5; }
+  .fx-victory-trophy {
+    font-size: 110px;
+    animation: fxTrophyPop 1s cubic-bezier(.34,1.56,.64,1) forwards, fxTrophyFloat 2s ease-in-out 1s infinite;
+    filter: drop-shadow(0 0 45px rgba(250,204,21,0.9));
+  }
+  @keyframes fxTrophyPop {
+    0% { transform: scale(0) rotate(-25deg); opacity: 0; }
+    60% { transform: scale(1.35) rotate(12deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes fxTrophyFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(-4deg); }
+  }
+  .fx-victory-text {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fde047;
+    text-shadow: 0 0 12px rgba(250,204,21,0.9), 0 0 30px rgba(250,204,21,0.6);
+    background: rgba(15,23,42,0.55);
+    padding: 10px 22px;
+    border-radius: 14px;
+    border: 2px solid rgba(250,204,21,0.6);
+    animation: fxVictoryGlow 1.2s ease-in-out infinite alternate;
+    text-align: center;
+    white-space: nowrap;
+  }
+  @keyframes fxVictoryGlow {
+    from { text-shadow: 0 0 10px rgba(250,204,21,0.7), 0 0 22px rgba(250,204,21,0.5); }
+    to { text-shadow: 0 0 20px rgba(250,204,21,1), 0 0 45px rgba(250,204,21,0.9); }
+  }
+  .fx-victory-score {
+    font-size: 26px;
+    font-weight: 900;
+    color: #fff;
+    background: linear-gradient(90deg, #f59e0b, #fde047, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(250,204,21,0.8));
+    animation: fxScorePop 0.6s ease-out 0.3s both, fxVictoryGlow 1.2s ease-in-out 0.9s infinite alternate;
+  }
+  @keyframes fxScorePop {
+    0% { transform: scale(0.4); opacity: 0; }
+    70% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .fx-ray-burst {
+    position: absolute;
+    width: 6px;
+    height: 220px;
+    background: linear-gradient(to top, transparent, rgba(250,204,21,0.85), transparent);
+    transform-origin: bottom center;
+    animation: fxRayBurst 1.4s ease-out forwards;
+  }
+  @keyframes fxRayBurst {
+    0% { opacity: 0; transform: scaleY(0) rotate(var(--rot)); }
+    30% { opacity: 1; transform: scaleY(1) rotate(var(--rot)); }
+    100% { opacity: 0; transform: scaleY(1.3) rotate(var(--rot)); }
+  }
+
+  /* Quiz Modal */
+  #overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, rgba(15,6,28,0.88), rgba(2,1,6,0.96));
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+  }
+  #quizBox {
+    background: linear-gradient(160deg, #241338, #140a22);
+    border: 1px solid var(--stone-edge);
+    border-radius: 14px;
+    padding: 22px 20px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+    box-shadow: 0 0 0 1px rgba(251,191,36,0.15), 0 0 45px rgba(251,191,36,0.28), 0 20px 50px rgba(0,0,0,0.7);
+    animation: quizAppear 0.35s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes quizAppear {
+    0% { transform: scale(0.85) translateY(14px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  #quizBox h2 {
+    margin-top: 0;
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: clamp(17px, 4.5vw, 21px);
+    text-align: center;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 12px rgba(251,191,36,0.4);
+  }
+  #quizQuestion {
+    font-size: clamp(15px, 4vw, 17px);
+    margin-bottom: 18px;
+    text-align: center;
+    line-height: 1.5;
+    color: var(--parchment);
+  }
+  #quizQuestion mjx-container { font-size: 108% !important; }
+  .quizImageWrap {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0 14px;
+  }
+  .quizImage {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 10px;
+    border: 1px solid var(--stone-edge);
+    box-shadow: 0 0 0 1px rgba(251,191,36,0.15), 0 8px 20px rgba(0,0,0,0.5);
+    background: #0a0716;
+    object-fit: contain;
+  }
+  .quizImageLoading {
+    font-size: 12px;
+    color: var(--parchment-dim);
+    text-align: center;
+    margin: 4px 0 10px;
+  }
+  .quizOption {
+    display: block;
+    width: 100%;
+    background: linear-gradient(180deg, var(--stone-2), var(--stone-1));
+    color: var(--parchment);
+    border: 1px solid var(--stone-edge);
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    touch-action: manipulation;
+    min-height: 46px;
+  }
+  .quizOption:hover { box-shadow: 0 0 0 1px var(--ember) inset, 0 0 14px rgba(255,122,69,0.35); }
+  .quizOption:active { transform: scale(0.98); }
+  .quizOption:disabled { cursor: default; opacity: 0.75; }
+  #quizResult { text-align: center; font-weight: bold; margin-top: 8px; min-height: 24px; }
+</style>
+</head>
+<body>
+
+<div id="ambientEmbers"></div>
+<div id="dangerVignette"></div>
+
+<h1><span class="torch">🕯️</span> MAZE QUIZ MONSTER <span class="torch">🕯️</span></h1>
+<div id="subtitle">Selamat datang di labirin sang monster</div>
+
+<!-- ===================== HALAMAN AWAL ===================== -->
+<div id="startScreen">
+  <div class="field-group">
+    <label for="selSekolah">🏫 Sekolah</label>
+    <select id="selSekolah" disabled><option value="">Memuat...</option></select>
+  </div>
+  <div class="field-group">
+    <label for="selKelas">🏷️ Kelas</label>
+    <select id="selKelas" disabled><option value="">Pilih sekolah dahulu</option></select>
+  </div>
+  <div class="field-group">
+    <label for="selNama">🧑‍🎓 Nama</label>
+    <select id="selNama" disabled><option value="">Pilih kelas dahulu</option></select>
+  </div>
+  <div class="field-group">
+    <label for="selMateri">📘 Materi</label>
+    <select id="selMateri" disabled><option value="">Memuat...</option></select>
+  </div>
+  <div class="field-group">
+    <label for="difficulty">⚔️ Tingkat Kesulitan</label>
+    <select id="difficulty">
+      <option value="10">Mudah (10x10)</option>
+      <option value="16" selected>Sedang (16x16)</option>
+      <option value="22">Sulit (22x22)</option>
+    </select>
+  </div>
+  <button id="btnMulai" disabled onclick="startAdventure()">🔥 Mulai Petualangan</button>
+  <div id="startStatus"><span class="spinner"></span>Memuat data sekolah &amp; materi...</div>
+</div>
+
+<!-- ===================== LAYAR GAME ===================== -->
+<div id="gameScreen">
+  <div id="playerBadge"></div>
+  <div id="info">
+    <span id="hearts">❤️❤️❤️</span>
+    <span>⏱️ <span id="timer">0</span>s</span>
+    <span>👣 <span id="steps">0</span></span>
+    <span>✅ Streak: <span id="streak">0</span>/3</span>
+    <span>🏆 Poin: <span id="score">0</span></span>
+    <span id="muteBtn" onclick="toggleMute()">🔊</span>
+    <span id="fullscreenBtn" onclick="toggleArenaFullscreen()" title="Layar Penuh">⛶</span>
+  </div>
+
+  <div id="canvasWrap">
+    <canvas id="maze"></canvas>
+  </div>
+
+  <div id="msg"></div>
+
+  <div class="controls">
+    <button class="mainbtn" onclick="newGame(true)">🔄 Labirin Baru</button>
+    <button class="mainbtn secondary" onclick="backToMenu()">🏠 Menu Awal</button>
+  </div>
+
+  <p class="hint">
+    🚪 = Pintu Quiz (terkunci) &nbsp;|&nbsp; 🔓 = Pintu sudah dibuka &nbsp;|&nbsp; 🏁 = Keluar &nbsp;|&nbsp; 👹 = Monster<br>
+    Panah/WASD (PC) atau Geser Jari/Tombol Panah di bawah (HP) untuk bergerak.<br>Jawab benar 3x soal berturut-turut = nyawa +1!<br>
+    Tekan ⛶ untuk mode layar penuh (hanya arena yang tampil).
+  </p>
+
+  <div id="dpad">
+    <div></div><button onclick="tryMove(0,-1)">↑</button><div></div>
+    <button onclick="tryMove(-1,0)">←</button><div></div><button onclick="tryMove(1,0)">→</button>
+    <div></div><button onclick="tryMove(0,1)">↓</button><div></div>
+  </div>
+</div>
+
+<!-- Quiz Modal -->
+<div id="overlay">
+  <div id="quizBox">
+    <h2>🚪 Pintu Quiz!</h2>
+    <div id="quizQuestion"></div>
+    <div id="quizOptions"></div>
+    <div id="quizResult"></div>
+  </div>
+</div>
+
+<div id="fxLayer"></div>
+<audio id="bgMusic" loop></audio>
+
+<script>
+/* ============================================================
+   KONFIGURASI KONEKSI KE BACKEND (Apps Script)
+   ============================================================
+   File ini SUDAH TIDAK berjalan di dalam Apps Script (bukan lagi
+   HtmlService). File ini bisa kamu buka langsung sebagai file,
+   atau host di GitHub Pages / Netlify / hosting sekolah, dll.
+
+   Ganti nilai di bawah dengan URL Web App Apps Script kamu, yaitu
+   URL yang didapat setelah Deploy > New deployment > Web app,
+   yang diakhiri "/exec". Backend (Code.gs) HANYA berfungsi sebagai
+   API JSON, tidak lagi menyajikan HTML.
+   ============================================================ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxx2aQ9Yw1wmDDOkgv0X7f0SAfQk073W5mgjrmDrpIHk4id0Qq149auZMniTaCauLIG/exec';
+
+/* ============================================================
+   STATE PEMAIN & DATA DARI SPREADSHEET (via Code.gs)
+   ============================================================ */
+const player = { sekolah: '', kelas: '', nama: '', materi: '' };
+let QUESTION_POOL = [];   // soal untuk materi terpilih, dari Sheet Soal
+let TARGET_DOOR_COUNT = 0;
+let bgMusikUrl = '';
+let bgArenaUrl = '';
+let arenaImg = null;
+let musicMuted = false;
+
+const hasGAS = !!APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('GANTI_DENGAN_URL') === -1;
+
+// Peta nama fungsi lama (gasCall) -> cara membangun query GET ke Code.gs.
+// Semua fungsi baca dipanggil lewat GET (?action=...&param=...) supaya
+// tidak memicu preflight CORS yang tidak didukung Apps Script.
+const GET_ACTION_PARAMS = {
+  getSekolahList: () => ({}),
+  getMateriList: () => ({}),
+  getKelasList: (args) => ({ sekolah: args[0] }),
+  getNamaList: (args) => ({ sekolah: args[0], kelas: args[1] }),
+  getSoalByMateri: (args) => ({ materi: args[0] })
+};
+
+function gasCall(fnName, args, onSuccess, onError) {
+  if (!hasGAS) {
+    onError && onError(new Error('APPS_SCRIPT_URL belum diisi. Buka index.html ini, isi variabel APPS_SCRIPT_URL dengan URL Web App Apps Script kamu (diakhiri /exec).'));
+    return;
+  }
+
+  // submitSkor: dikirim via POST, body JSON, TAPI Content-Type "text/plain"
+  // (BUKAN application/json) supaya browser tidak mengirim preflight OPTIONS
+  // yang tidak bisa dijawab oleh Apps Script.
+  if (fnName === 'submitSkor') {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'submitSkor', payload: args[0] })
+    })
+      .then(res => res.json())
+      .then(json => {
+        if (json.success) onSuccess(json.data);
+        else onError && onError(new Error(json.error || 'Gagal mengirim skor.'));
+      })
+      .catch(err => onError && onError(err));
+    return;
+  }
+
+  const buildParams = GET_ACTION_PARAMS[fnName];
+  if (!buildParams) {
+    onError && onError(new Error('Aksi tidak dikenal: ' + fnName));
+    return;
+  }
+
+  const params = new URLSearchParams({ action: fnName, ...buildParams(args || []) });
+  fetch(APPS_SCRIPT_URL + '?' + params.toString())
+    .then(res => res.json())
+    .then(json => {
+      if (json.success) onSuccess(json.data);
+      else onError && onError(new Error(json.error || 'Terjadi kesalahan di server.'));
+    })
+    .catch(err => onError && onError(err));
+}
+
+/* ============================================================
+   HALAMAN AWAL — isi form dari Sheet Data & Sheet Soal
+   ============================================================ */
+const selSekolah = document.getElementById('selSekolah');
+const selKelas = document.getElementById('selKelas');
+const selNama = document.getElementById('selNama');
+const selMateri = document.getElementById('selMateri');
+const btnMulai = document.getElementById('btnMulai');
+const startStatus = document.getElementById('startStatus');
+const startScreen = document.getElementById('startScreen');
+const gameScreen = document.getElementById('gameScreen');
+const playerBadge = document.getElementById('playerBadge');
+
+function setStartStatus(text, isError, showSpinner) {
+  startStatus.innerHTML = (showSpinner ? '<span class="spinner"></span>' : '') + text;
+  startStatus.classList.toggle('error', !!isError);
+}
+
+function fillSelect(sel, items, placeholder) {
+  sel.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = placeholder;
+  sel.appendChild(ph);
+  items.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+  sel.disabled = items.length === 0;
+}
+
+function validateStartForm() {
+  const ok = selSekolah.value && selKelas.value && selNama.value && selMateri.value;
+  btnMulai.disabled = !ok;
+}
+
+function loadInitialData() {
+  let pending = 2;
+  function done() {
+    pending--;
+    if (pending === 0) setStartStatus('Silakan lengkapi data di atas.', false, false);
+  }
+
+  gasCall('getSekolahList', [], function (list) {
+    fillSelect(selSekolah, list, list.length ? 'Pilih sekolah' : 'Data sekolah kosong');
+    done();
+  }, function (err) {
+    setStartStatus('Gagal memuat data sekolah: ' + err.message, true, false);
+  });
+
+  gasCall('getMateriList', [], function (list) {
+    fillSelect(selMateri, list, list.length ? 'Pilih materi' : 'Belum ada soal');
+    selMateri.addEventListener('change', validateStartForm);
+    done();
+  }, function (err) {
+    setStartStatus('Gagal memuat data materi: ' + err.message, true, false);
+  });
+}
+
+selSekolah.addEventListener('change', function () {
+  fillSelect(selKelas, [], 'Memuat...');
+  fillSelect(selNama, [], 'Pilih kelas dahulu');
+  validateStartForm();
+  if (!selSekolah.value) return;
+  gasCall('getKelasList', [selSekolah.value], function (list) {
+    fillSelect(selKelas, list, list.length ? 'Pilih kelas' : 'Kelas kosong');
+    validateStartForm();
+  }, function (err) {
+    setStartStatus('Gagal memuat kelas: ' + err.message, true, false);
+  });
+});
+
+selKelas.addEventListener('change', function () {
+  fillSelect(selNama, [], 'Memuat...');
+  validateStartForm();
+  if (!selKelas.value) return;
+  gasCall('getNamaList', [selSekolah.value, selKelas.value], function (list) {
+    fillSelect(selNama, list, list.length ? 'Pilih nama' : 'Nama kosong');
+    validateStartForm();
+  }, function (err) {
+    setStartStatus('Gagal memuat nama: ' + err.message, true, false);
+  });
+});
+
+selNama.addEventListener('change', validateStartForm);
+
+function startAdventure() {
+  player.sekolah = selSekolah.value;
+  player.kelas = selKelas.value;
+  player.nama = selNama.value;
+  player.materi = selMateri.value;
+
+  btnMulai.disabled = true;
+  setStartStatus('Menyiapkan labirin & soal...', false, true);
+
+  gasCall('getSoalByMateri', [player.materi], function (data) {
+    if (!data || !data.questions || data.questions.length === 0) {
+      setStartStatus('Materi ini belum punya soal di Sheet Soal.', true, false);
+      btnMulai.disabled = false;
+      return;
+    }
+    QUESTION_POOL = data.questions;
+    TARGET_DOOR_COUNT = data.doorCount;
+    bgMusikUrl = data.bgMusik || '';
+    bgArenaUrl = data.bgArena || '';
+    loadArenaBackground(bgArenaUrl);
+    setupMusic(bgMusikUrl);
+
+    playerBadge.textContent = '🏫 ' + player.sekolah + '  •  🏷️ ' + player.kelas + '  •  🧑‍🎓 ' + player.nama + '  •  📘 ' + player.materi;
+
+    startScreen.style.display = 'none';
+    gameScreen.style.display = 'flex';
+    document.getElementById('dpad').classList.add('enabled');
+    newGame(true);
+  }, function (err) {
+    setStartStatus('Gagal memuat soal: ' + err.message, true, false);
+    btnMulai.disabled = false;
+  });
+}
+
+function backToMenu() {
+  gameActive = false;
+  clearInterval(timerInterval);
+  clearInterval(monsterInterval);
+  const bgMusic = document.getElementById('bgMusic');
+  bgMusic.pause();
+  gameScreen.style.display = 'none';
+  startScreen.style.display = 'block';
+  btnMulai.disabled = false;
+  setStartStatus('Silakan lengkapi data di atas.', false, false);
+}
+
+/* ============================================================
+   MUSIK & ARENA SESUAI MATERI
+   ============================================================ */
+function setupMusic(url) {
+  const bgMusic = document.getElementById('bgMusic');
+  if (!url) { bgMusic.removeAttribute('src'); return; }
+  bgMusic.src = url;
+  bgMusic.volume = 0.5;
+  musicMuted = false;
+  document.getElementById('muteBtn').textContent = '🔊';
+  bgMusic.play().catch(() => {
+    document.getElementById('muteBtn').textContent = '🔈';
+  });
+}
+
+function toggleMute() {
+  const bgMusic = document.getElementById('bgMusic');
+  if (!bgMusic.src) return;
+  if (bgMusic.paused) {
+    bgMusic.play().catch(() => {});
+    musicMuted = false;
+  } else {
+    musicMuted = !musicMuted;
+    bgMusic.muted = musicMuted;
+  }
+  document.getElementById('muteBtn').textContent = (bgMusic.paused || musicMuted) ? '🔈' : '🔊';
+}
+
+/* ============================================================
+   MODE ARENA FULLSCREEN
+   ============================================================ */
+let arenaFullscreen = false;
+
+function toggleArenaFullscreen() {
+  arenaFullscreen = !arenaFullscreen;
+  applyFullscreenState();
+}
+
+function applyFullscreenState() {
+  document.body.classList.toggle('arena-fullscreen', arenaFullscreen);
+  const btn = document.getElementById('fullscreenBtn');
+  if (btn) {
+    btn.textContent = arenaFullscreen ? '✖️' : '⛶';
+    btn.title = arenaFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh';
+  }
+
+  // PENTING: fullscreen-kan seluruh dokumen (documentElement), BUKAN hanya
+  // #canvasWrap. Kalau hanya #canvasWrap yang di-fullscreen-kan, browser
+  // hanya merender elemen itu & anaknya saja — akibatnya #overlay (kartu
+  // soal) dan #fxLayer (animasi pintu/monster) yang berada DI LUAR
+  // #canvasWrap jadi tidak pernah muncul saat fullscreen aktif.
+  const fsTarget = document.documentElement;
+  if (arenaFullscreen) {
+    const req = fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen || fsTarget.msRequestFullscreen;
+    if (req) { req.call(fsTarget).catch(() => {}); }
+  } else {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (exit) { exit.call(document).catch(() => {}); }
+    }
+  }
+
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    drawMaze();
+  });
+}
+
+function handleNativeFullscreenChange() {
+  const stillNative = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!stillNative && arenaFullscreen) {
+    arenaFullscreen = false;
+    document.body.classList.remove('arena-fullscreen');
+    const btn = document.getElementById('fullscreenBtn');
+    if (btn) { btn.textContent = '⛶'; btn.title = 'Layar Penuh'; }
+    requestAnimationFrame(() => { resizeCanvas(); drawMaze(); });
+  }
+}
+document.addEventListener('fullscreenchange', handleNativeFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleNativeFullscreenChange);
+
+function loadArenaBackground(url) {
+  arenaImg = null;
+  if (!url) return;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { arenaImg = img; drawMaze(); };
+  img.onerror = () => { arenaImg = null; };
+  img.src = url;
+}
+
+/* ============================================================
+   GAME MAZE
+   ============================================================ */
+const canvas = document.getElementById('maze');
+const ctx = canvas.getContext('2d');
+const timerEl = document.getElementById('timer');
+const stepsEl = document.getElementById('steps');
+const streakEl = document.getElementById('streak');
+const scoreEl = document.getElementById('score');
+const heartsEl = document.getElementById('hearts');
+const msgEl = document.getElementById('msg');
+const difficultySelect = document.getElementById('difficulty');
+const overlay = document.getElementById('overlay');
+const quizBoxEl = document.getElementById('quizBox');
+const quizQuestion = document.getElementById('quizQuestion');
+const quizOptions = document.getElementById('quizOptions');
+const quizResult = document.getElementById('quizResult');
+const fxLayer = document.getElementById('fxLayer');
+const ambientEmbers = document.getElementById('ambientEmbers');
+const dangerVignette = document.getElementById('dangerVignette');
+
+let cols, rows, cellSize;
+let grid = [];
+let player_pos = {x:0, y:0};
+let goal = {x:0, y:0};
+let doors = [];
+let monsters = [];
+let steps = 0;
+let seconds = 0;
+let lives = 3;
+let score = 0;
+let correctStreak = 0;
+let timerInterval = null;
+let monsterInterval = null;
+let gameActive = false;
+let quizOpen = false;
+let currentDoor = null;
+let scoreSubmitted = false;
+let questionsAnswered = 0;
+
+let playerEmoji = '😀';
+let playerHitTimeout = null;
+const MONSTER_EMOJIS = ['👹','👺','🧟','👻','🐲','🦹','🐺','💀'];
+
+function Cell(x, y) {
+  this.x = x; this.y = y;
+  this.walls = {top:true, right:true, bottom:true, left:true};
+  this.visited = false;
+}
+
+function index(x, y) {
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return -1;
+  return x + y * cols;
+}
+
+function generateMaze() {
+  grid = [];
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) grid.push(new Cell(x, y));
+  }
+  let stack = [];
+  let current = grid[0];
+  current.visited = true;
+  let visitedCount = 1;
+  const total = cols * rows;
+
+  function getUnvisitedNeighbors(cell) {
+    const neighbors = [];
+    const dirs = [
+      {dx:0, dy:-1, wall:'top', opp:'bottom'},
+      {dx:1, dy:0, wall:'right', opp:'left'},
+      {dx:0, dy:1, wall:'bottom', opp:'top'},
+      {dx:-1, dy:0, wall:'left', opp:'right'}
+    ];
+    for (const d of dirs) {
+      const idx = index(cell.x + d.dx, cell.y + d.dy);
+      if (idx !== -1 && !grid[idx].visited) neighbors.push({cell: grid[idx], dir: d});
+    }
+    return neighbors;
+  }
+
+  while (visitedCount < total) {
+    const neighbors = getUnvisitedNeighbors(current);
+    if (neighbors.length > 0) {
+      const {cell: next, dir} = neighbors[Math.floor(Math.random() * neighbors.length)];
+      current.walls[dir.wall] = false;
+      next.walls[dir.opp] = false;
+      next.visited = true;
+      visitedCount++;
+      stack.push(current);
+      current = next;
+    } else if (stack.length > 0) {
+      current = stack.pop();
+    }
+  }
+}
+
+function getOpenNeighbors(cell) {
+  const result = [];
+  if (!cell.walls.top) result.push(grid[index(cell.x, cell.y - 1)]);
+  if (!cell.walls.right) result.push(grid[index(cell.x + 1, cell.y)]);
+  if (!cell.walls.bottom) result.push(grid[index(cell.x, cell.y + 1)]);
+  if (!cell.walls.left) result.push(grid[index(cell.x - 1, cell.y)]);
+  return result;
+}
+
+function bfsNextStep(start, target) {
+  if (start.x === target.x && start.y === target.y) return null;
+  const startCell = grid[index(start.x, start.y)];
+  const visited = new Set([index(start.x, start.y)]);
+  const queue = [{cell: startCell, path: []}];
+  while (queue.length > 0) {
+    const {cell, path} = queue.shift();
+    const neighbors = getOpenNeighbors(cell);
+    for (const n of neighbors) {
+      const idx = index(n.x, n.y);
+      if (visited.has(idx)) continue;
+      const newPath = [...path, {x: n.x, y: n.y}];
+      if (n.x === target.x && n.y === target.y) return newPath[0];
+      visited.add(idx);
+      queue.push({cell: n, path: newPath});
+    }
+  }
+  return null;
+}
+
+function placeDoors() {
+  doors = [];
+  const shuffled = [...QUESTION_POOL].sort(() => Math.random() - 0.5);
+  const target = Math.min(TARGET_DOOR_COUNT || shuffled.length, shuffled.length, cols * rows - 2);
+  const occupied = new Set(['0,0', `${goal.x},${goal.y}`]);
+  let attempts = 0;
+  let qi = 0;
+  while (doors.length < target && attempts < 800) {
+    attempts++;
+    const x = Math.floor(Math.random() * cols);
+    const y = Math.floor(Math.random() * rows);
+    const key = `${x},${y}`;
+    if (occupied.has(key)) continue;
+    occupied.add(key);
+    doors.push({x, y, opened: false, question: shuffled[qi]});
+    qi++;
+  }
+}
+
+function drawMaze() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (arenaImg) {
+    ctx.drawImage(arenaImg, 0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(5,2,12,0.62)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    const floorGrad = ctx.createRadialGradient(
+      canvas.width/2, canvas.height/2, 10,
+      canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)/1.2
+    );
+    floorGrad.addColorStop(0, '#120a20');
+    floorGrad.addColorStop(1, '#050209');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  for (const door of doors) {
+    ctx.fillStyle = door.opened ? 'rgba(148,163,184,0.10)' : 'rgba(251,191,36,0.22)';
+    ctx.fillRect(door.x * cellSize, door.y * cellSize, cellSize, cellSize);
+  }
+
+  ctx.strokeStyle = '#8b5cf6';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(139,92,246,0.35)';
+  ctx.shadowBlur = 3;
+  for (const cell of grid) {
+    const px = cell.x * cellSize;
+    const py = cell.y * cellSize;
+    ctx.beginPath();
+    if (cell.walls.top) { ctx.moveTo(px, py); ctx.lineTo(px + cellSize, py); }
+    if (cell.walls.right) { ctx.moveTo(px + cellSize, py); ctx.lineTo(px + cellSize, py + cellSize); }
+    if (cell.walls.bottom) { ctx.moveTo(px, py + cellSize); ctx.lineTo(px + cellSize, py + cellSize); }
+    if (cell.walls.left) { ctx.moveTo(px, py); ctx.lineTo(px, py + cellSize); }
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#4ade80';
+  ctx.shadowColor = '#4ade80';
+  ctx.shadowBlur = 18;
+  const gp = cellSize * 0.2;
+  ctx.fillRect(goal.x * cellSize + gp, goal.y * cellSize + gp, cellSize - gp*2, cellSize - gp*2);
+  ctx.shadowBlur = 0;
+  ctx.font = `${Math.floor(cellSize*0.6)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🏁', goal.x * cellSize + cellSize/2, goal.y * cellSize + cellSize/2);
+
+  ctx.font = `${Math.floor(cellSize*0.62)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const door of doors) {
+    const icon = door.opened ? '🔓' : '🚪';
+    ctx.globalAlpha = door.opened ? 0.55 : 1;
+    if (!door.opened) { ctx.shadowColor = 'rgba(251,191,36,0.8)'; ctx.shadowBlur = 10; }
+    ctx.fillText(icon, door.x * cellSize + cellSize/2, door.y * cellSize + cellSize/2);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.font = `${Math.floor(cellSize*0.62)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (const m of monsters) {
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 16;
+    ctx.fillText(m.emoji || '👹', m.x * cellSize + cellSize/2, m.y * cellSize + cellSize/2);
+    ctx.shadowBlur = 0;
+  }
+
+  ctx.font = `${Math.floor(cellSize*0.65)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#f472b6';
+  ctx.shadowBlur = 16;
+  ctx.fillText(playerEmoji, player_pos.x * cellSize + cellSize/2, player_pos.y * cellSize + cellSize/2);
+  ctx.shadowBlur = 0;
+}
+
+function canMove(dx, dy) {
+  const cell = grid[index(player_pos.x, player_pos.y)];
+  if (dx === 1) return !cell.walls.right;
+  if (dx === -1) return !cell.walls.left;
+  if (dy === 1) return !cell.walls.bottom;
+  if (dy === -1) return !cell.walls.top;
+  return false;
+}
+
+function tryMove(dx, dy) {
+  if (!gameActive || quizOpen) return;
+  if (!canMove(dx, dy)) return;
+  player_pos.x += dx;
+  player_pos.y += dy;
+  steps++;
+  stepsEl.textContent = steps;
+
+  checkDoor();
+  if (!quizOpen) {
+    drawMaze();
+    checkMonsterCollision();
+    checkWin();
+  }
+}
+
+function checkDoor() {
+  const door = doors.find(d => d.x === player_pos.x && d.y === player_pos.y && !d.opened);
+  if (door) openQuiz(door);
+}
+
+/* ============================================================
+   GAMBAR SOAL — dukung link Google Drive maupun link gambar biasa
+   ============================================================ */
+function extractDriveFileId(url) {
+  if (!url) return null;
+  let m = url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+  if (m) return m[1];
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if (m) return m[1];
+  return null;
+}
+
+function resolveImageUrl(url) {
+  if (!url) return '';
+  url = String(url).trim();
+  if (url.includes('drive.google.com')) {
+    const fileId = extractDriveFileId(url);
+    if (fileId) {
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+    }
+  }
+  return url;
+}
+
+function getQuestionImageUrl(q) {
+  const raw = q.gambar || q.image || q.img || q.foto || q.picture || '';
+  return raw ? resolveImageUrl(raw) : '';
+}
+
+function renderQuizMath() {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetPromise([quizBoxEl]).catch(err => console.error('MathJax render error:', err));
+  }
+}
+
+function openQuiz(door) {
+  quizOpen = true;
+  currentDoor = door;
+  const q = door.question;
+
+  quizQuestion.innerHTML = '';
+  const textDiv = document.createElement('div');
+  textDiv.id = 'quizQuestionText';
+  textDiv.textContent = q.q;
+  quizQuestion.appendChild(textDiv);
+
+  const imgUrl = getQuestionImageUrl(q);
+  if (imgUrl) {
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'quizImageWrap';
+    const loadingText = document.createElement('div');
+    loadingText.className = 'quizImageLoading';
+    loadingText.textContent = '🖼️ Memuat gambar...';
+    imgWrap.appendChild(loadingText);
+
+    const imgEl = document.createElement('img');
+    imgEl.className = 'quizImage';
+    imgEl.alt = 'Gambar soal';
+    imgEl.referrerPolicy = 'no-referrer';
+    imgEl.onload = () => { loadingText.remove(); };
+    imgEl.onerror = () => {
+      loadingText.textContent = '⚠️ Gambar tidak bisa dimuat (pastikan link dibagikan sebagai "Siapa saja yang memiliki link").';
+    };
+    imgEl.src = imgUrl;
+    imgWrap.appendChild(imgEl);
+    quizQuestion.appendChild(imgWrap);
+  }
+
+  quizOptions.innerHTML = '';
+  quizResult.textContent = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quizOption';
+    btn.textContent = opt;
+    btn.onclick = () => answerQuiz(i === q.a, door);
+    quizOptions.appendChild(btn);
+  });
+  overlay.style.display = 'flex';
+
+  renderQuizMath();
+}
+
+function answerQuiz(correct, door) {
+  Array.from(quizOptions.children).forEach(b => b.disabled = true);
+  door.opened = true;
+  questionsAnswered++;
+  if (correct) {
+    quizResult.textContent = '✅ Benar! Pintu terbuka.';
+    quizResult.style.color = '#4ade80';
+    score += 1000;
+    correctStreak++;
+    if (correctStreak >= 3) {
+      correctStreak = 0;
+      lives++;
+      quizResult.textContent += ' 🎁 Nyawa +1!';
+    }
+  } else {
+    quizResult.textContent = '❌ Salah! Pintu tetap terbuka, tapi monster muncul!';
+    quizResult.style.color = '#f87171';
+    correctStreak = 0;
+    const randomEmoji = MONSTER_EMOJIS[Math.floor(Math.random() * MONSTER_EMOJIS.length)];
+    const now = Date.now();
+    monsters.push({x: 0, y: 0, emoji: randomEmoji, spawnTime: now, lastMove: now});
+  }
+  updateHUD();
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    quizOpen = false;
+    drawMaze();
+    triggerDoorEffect(correct);
+    checkMonsterCollision();
+    checkWin();
+  }, 1200);
+}
+
+const MONSTER_BASE_INTERVAL = 750;
+const MONSTER_MIN_INTERVAL = 180;
+const MONSTER_SPEEDUP_PER_SEC = 25;
+
+function getMonsterInterval(monster) {
+  const ageSec = (Date.now() - monster.spawnTime) / 1000;
+  const interval = MONSTER_BASE_INTERVAL - ageSec * MONSTER_SPEEDUP_PER_SEC;
+  return Math.max(MONSTER_MIN_INTERVAL, interval);
+}
+
+function moveMonsters() {
+  if (!gameActive || quizOpen || monsters.length === 0) return;
+  const now = Date.now();
+  let moved = false;
+  for (const m of monsters) {
+    const interval = getMonsterInterval(m);
+    if (now - m.lastMove >= interval) {
+      const next = bfsNextStep(m, player_pos);
+      if (next) { m.x = next.x; m.y = next.y; }
+      m.lastMove = now;
+      moved = true;
+    }
+  }
+  if (moved) {
+    drawMaze();
+    checkMonsterCollision();
+  }
+}
+
+function triggerHitEffect() {
+  const flash = document.createElement('div');
+  flash.className = 'fx-flash-hit';
+  fxLayer.appendChild(flash);
+  flash.addEventListener('animationend', () => flash.remove());
+
+  canvas.classList.remove('shake');
+  void canvas.offsetWidth;
+  canvas.classList.add('shake');
+  setTimeout(() => canvas.classList.remove('shake'), 550);
+
+  const burst = document.createElement('div');
+  burst.className = 'fx-burst';
+  burst.textContent = '💥';
+  fxLayer.appendChild(burst);
+  burst.addEventListener('animationend', () => burst.remove());
+}
+
+function triggerDoorEffect(success) {
+  const box = document.createElement('div');
+  box.className = success ? 'fx-door fx-door-success' : 'fx-door fx-door-fail';
+  box.innerHTML = success
+    ? `<div class="fx-door-icon">🔓✨</div><div class="fx-door-text">✅ PINTU TERBUKA!</div>`
+    : `<div class="fx-door-icon">🚪💨</div><div class="fx-door-text">⚠️ PINTU DIPAKSA TERBUKA!</div>`;
+  fxLayer.appendChild(box);
+  setTimeout(() => box.remove(), 1150);
+
+  const sparkEmojis = success ? ['✨','⭐','💫'] : ['🔥','💢','⚡'];
+  for (let i = 0; i < 8; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'fx-spark';
+    spark.textContent = sparkEmojis[Math.floor(Math.random() * sparkEmojis.length)];
+    const angle = (Math.PI * 2 * i) / 8;
+    const dist = 90 + Math.random() * 40;
+    spark.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    spark.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    fxLayer.appendChild(spark);
+    spark.addEventListener('animationend', () => spark.remove());
+  }
+}
+
+function checkMonsterCollision() {
+  const hitIdx = monsters.findIndex(m => m.x === player_pos.x && m.y === player_pos.y);
+  if (hitIdx !== -1) {
+    monsters.splice(hitIdx, 1);
+    lives--;
+    updateHUD();
+    triggerHitEffect();
+    playerEmoji = '😢';
+    clearTimeout(playerHitTimeout);
+    drawMaze();
+    playerHitTimeout = setTimeout(() => {
+      playerEmoji = '😀';
+      drawMaze();
+    }, 900);
+    if (lives <= 0) {
+      gameOver();
+    } else {
+      msgEl.innerHTML = `<span class="lose">👹 Kena monster! Nyawa -1</span>`;
+      setTimeout(() => { if (gameActive) msgEl.textContent = ''; }, 1500);
+    }
+  }
+}
+
+function triggerVictoryEffect(finalScore) {
+  const duration = 4500;
+  const goldEmojis = ['✨','⭐','🌟','💰','🪙','🥇','💛','🌕'];
+
+  function spawnGoldBatch() {
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement('div');
+      p.className = 'fx-gold-particle';
+      p.textContent = goldEmojis[Math.floor(Math.random() * goldEmojis.length)];
+      p.style.left = `${Math.random() * 100}%`;
+      p.style.fontSize = `${16 + Math.random() * 22}px`;
+      p.style.animationDuration = `${2.2 + Math.random() * 2.3}s`;
+      p.style.animationDelay = `${Math.random() * 0.4}s`;
+      fxLayer.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+  }
+
+  spawnGoldBatch();
+  const spawnInterval = setInterval(spawnGoldBatch, 180);
+  setTimeout(() => clearInterval(spawnInterval), duration - 500);
+
+  for (let i = 0; i < 10; i++) {
+    const ray = document.createElement('div');
+    ray.className = 'fx-ray-burst';
+    ray.style.setProperty('--rot', `${(360 / 10) * i}deg`);
+    ray.style.animationDelay = `${i * 0.03}s`;
+    fxLayer.appendChild(ray);
+    ray.addEventListener('animationend', () => ray.remove());
+  }
+
+  const center = document.createElement('div');
+  center.className = 'fx-victory-center';
+  center.innerHTML = `
+    <div class="fx-victory-trophy">🏆</div>
+    <div class="fx-victory-text">🎉 SELAMAT! KAMU BERHASIL KELUAR! 🎉</div>
+    <div class="fx-victory-score">💰 ${finalScore.toLocaleString('id-ID')} POIN</div>
+  `;
+  fxLayer.appendChild(center);
+  setTimeout(() => center.remove(), duration + 500);
+}
+
+function sendScoreToSheet(status, finalScore) {
+  if (scoreSubmitted) return;
+  scoreSubmitted = true;
+  gasCall('submitSkor', [{
+    sekolah: player.sekolah,
+    kelas: player.kelas,
+    nama: player.nama,
+    materi: player.materi,
+    status: status,
+    skor: finalScore,
+    waktu: seconds,
+    langkah: steps,
+    nyawaSisa: Math.max(lives, 0)
+  }], function () { /* berhasil terkirim */ }, function (err) {
+    console.error('Gagal mengirim skor:', err);
+  });
+}
+
+const EXIT_BONUS = 10000;
+
+function checkWin() {
+  if (player_pos.x === goal.x && player_pos.y === goal.y) {
+    gameActive = false;
+    clearInterval(timerInterval);
+    clearInterval(monsterInterval);
+
+    let finalScore;
+    if (questionsAnswered === 0) {
+      finalScore = EXIT_BONUS;
+    } else {
+      const safeSeconds = seconds > 0 ? seconds : 1;
+      finalScore = EXIT_BONUS + Math.round(score * (steps / safeSeconds));
+    }
+    scoreEl.textContent = finalScore;
+    triggerVictoryEffect(finalScore);
+    msgEl.innerHTML = `<span class="win">🎉 Selamat! Kamu menang dalam ${seconds} detik, ${steps} langkah!<br>🏆 Skor Akhir: ${finalScore.toLocaleString('id-ID')} poin</span>`;
+    sendScoreToSheet('Menang', finalScore);
+  }
+}
+
+function gameOver() {
+  gameActive = false;
+  clearInterval(timerInterval);
+  clearInterval(monsterInterval);
+  msgEl.innerHTML = `<span class="lose">💀 Nyawa habis! Mulai dari awal lagi...</span>`;
+  sendScoreToSheet('Kalah', score);
+  setTimeout(() => newGame(true), 2000);
+}
+
+function updateHUD() {
+  heartsEl.textContent = '❤️'.repeat(Math.max(lives,0)) + '🖤'.repeat(Math.max(3-lives,0));
+  streakEl.textContent = correctStreak;
+  scoreEl.textContent = score;
+  const critical = lives === 1 && gameActive;
+  heartsEl.classList.toggle('low', critical);
+  dangerVignette.classList.toggle('active', critical);
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  seconds = 0;
+  timerEl.textContent = seconds;
+  timerInterval = setInterval(() => {
+    seconds++;
+    timerEl.textContent = seconds;
+  }, 1000);
+}
+
+function resizeCanvas() {
+  const viewportH = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  let size;
+  if (document.body.classList.contains('arena-fullscreen')) {
+    size = Math.min(window.innerWidth - 16, viewportH - 16, 1000);
+  } else {
+    const isMobile = window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+    const reservedHeight = isMobile ? 460 : 400;
+    size = Math.min(window.innerWidth - 24, viewportH - reservedHeight, 560);
+  }
+  cellSize = Math.floor(Math.max(size, 180) / cols);
+  canvas.width = cellSize * cols;
+  canvas.height = cellSize * rows;
+}
+
+function newGame(resetLives) {
+  cols = rows = parseInt(difficultySelect.value);
+  player_pos = {x: 0, y: 0};
+  goal = {x: cols - 1, y: rows - 1};
+  steps = 0;
+  monsters = [];
+  score = 0;
+  scoreSubmitted = false;
+  questionsAnswered = 0;
+  playerEmoji = '😀';
+  clearTimeout(playerHitTimeout);
+  if (resetLives) { lives = 3; correctStreak = 0; }
+  gameActive = true;
+  quizOpen = false;
+  overlay.style.display = 'none';
+  stepsEl.textContent = 0;
+  msgEl.textContent = '';
+  generateMaze();
+  placeDoors();
+  resizeCanvas();
+  drawMaze();
+  updateHUD();
+  startTimer();
+  clearInterval(monsterInterval);
+  monsterInterval = setInterval(moveMonsters, 100);
+}
+
+document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+  if (['arrowup','w'].includes(key)) { e.preventDefault(); tryMove(0, -1); }
+  else if (['arrowdown','s'].includes(key)) { e.preventDefault(); tryMove(0, 1); }
+  else if (['arrowleft','a'].includes(key)) { e.preventDefault(); tryMove(-1, 0); }
+  else if (['arrowright','d'].includes(key)) { e.preventDefault(); tryMove(1, 0); }
+  else if (key === 'escape' && arenaFullscreen && !document.fullscreenElement && !document.webkitFullscreenElement) {
+    toggleArenaFullscreen();
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (!gameActive && !cols) return;
+  resizeCanvas();
+  drawMaze();
+});
+
+let touchStartX = 0, touchStartY = 0;
+const SWIPE_THRESHOLD = 24;
+
+canvas.addEventListener('touchstart', (e) => {
+  const t = e.changedTouches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, {passive: true});
+
+canvas.addEventListener('touchend', (e) => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    tryMove(dx > 0 ? 1 : -1, 0);
+  } else {
+    tryMove(0, dy > 0 ? 1 : -1);
+  }
+}, {passive: true});
+
+canvas.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (!gameActive) return;
+    resizeCanvas();
+    drawMaze();
+  });
+}
+
+/* Bara api ambient di latar belakang */
+function spawnAmbientEmber() {
+  const p = document.createElement('div');
+  p.className = 'ember-particle';
+  const size = 3 + Math.random() * 5;
+  p.style.width = `${size}px`;
+  p.style.height = `${size}px`;
+  p.style.left = `${Math.random() * 100}%`;
+  const duration = 5 + Math.random() * 5;
+  p.style.animationDuration = `${duration}s`;
+  ambientEmbers.appendChild(p);
+  setTimeout(() => p.remove(), duration * 1000 + 200);
+}
+for (let i = 0; i < 10; i++) setTimeout(spawnAmbientEmber, i * 250);
+setInterval(spawnAmbientEmber, 550);
+
+/* ============================================================
+   MULAI: tampilkan halaman awal & muat data
+   ============================================================ */
+if (!hasGAS) {
+  setStartStatus('APPS_SCRIPT_URL belum diisi. Buka file index.html ini, cari variabel APPS_SCRIPT_URL di bagian atas <script>, lalu isi dengan URL Web App Apps Script kamu.', true, false);
+} else {
+  loadInitialData();
+}
+</script>
+</body>
+</html>
