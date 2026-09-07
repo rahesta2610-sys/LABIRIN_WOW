@@ -278,6 +278,32 @@
     touch-action: manipulation;
   }
 
+  #fsCloseBtn {
+    display: none;
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 70;
+    align-items: center;
+    gap: 5px;
+    background: rgba(190,25,25,0.88);
+    color: #fff2e0;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.55);
+  }
+  #fsCloseBtn:active { transform: scale(0.95); }
+  body.arena-fullscreen #fsCloseBtn {
+    display: flex;
+  }
+
   /* ===================== MODE ARENA FULLSCREEN ===================== */
   body.arena-fullscreen {
     padding: 0 !important;
@@ -297,16 +323,34 @@
   }
   body.arena-fullscreen #info {
     position: fixed;
-    top: 10px;
+    top: 8px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 60;
     margin: 0;
     background: rgba(5,2,12,0.6);
-    padding: 8px 10px;
-    border-radius: 14px;
+    padding: 5px 8px;
+    border-radius: 12px;
     backdrop-filter: blur(3px);
-    max-width: 94vw;
+    max-width: 97vw;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  body.arena-fullscreen #info::-webkit-scrollbar { display: none; }
+  body.arena-fullscreen #info span {
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  body.arena-fullscreen #hearts {
+    font-size: 11px;
+    letter-spacing: 0px;
   }
   /* Nyawa, Waktu, Langkah, Streak & Skor dibuat transparan (20%) saat fullscreen,
      supaya tidak menutupi arena. Tombol mute & fullscreen tetap terlihat jelas. */
@@ -359,6 +403,11 @@
     padding: 8px;
     border-radius: 16px;
     margin: 0;
+    opacity: 0.1;
+    transition: opacity 0.2s ease;
+  }
+  body.arena-fullscreen #dpad.enabled.dpad-pressed {
+    opacity: 0.55;
   }
 
   #canvasWrap {
@@ -763,6 +812,8 @@
   <div id="canvasWrap">
     <canvas id="maze"></canvas>
   </div>
+
+  <button id="fsCloseBtn" type="button">✕ Tutup Layar Penuh</button>
 
   <div id="msg"></div>
 
@@ -1761,12 +1812,21 @@ canvas.addEventListener('pointercancel', () => { swipePointerId = null; });
 
 /* Tombol D-Pad: pointerdown + preventDefault supaya tidak ada delay
    ghost-click dan tidak terpicu dobel gerakan di WebView. */
+const dpadEl = document.getElementById('dpad');
+let dpadPressTimeout = null;
 document.querySelectorAll('#dpad button[data-dx]').forEach((btn) => {
   const dx = parseInt(btn.dataset.dx, 10);
   const dy = parseInt(btn.dataset.dy, 10);
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     tryMove(dx, dy);
+    // Feedback visual: opacity dpad naik sesaat saat disentuh, lalu
+    // kembali redup (10%) supaya tidak menutupi arena.
+    if (dpadEl) {
+      dpadEl.classList.add('dpad-pressed');
+      clearTimeout(dpadPressTimeout);
+      dpadPressTimeout = setTimeout(() => dpadEl.classList.remove('dpad-pressed'), 500);
+    }
   }, { passive: false });
 });
 
@@ -1779,6 +1839,16 @@ if (muteBtnEl) {
 const fullscreenBtnEl = document.getElementById('fullscreenBtn');
 if (fullscreenBtnEl) {
   fullscreenBtnEl.addEventListener('pointerdown', (e) => { e.preventDefault(); toggleArenaFullscreen(); }, { passive: false });
+}
+
+/* Tombol khusus untuk MENUTUP fullscreen — selalu terlihat jelas
+   (tidak ikut redup), diposisikan di pojok kanan atas arena. */
+const fsCloseBtnEl = document.getElementById('fsCloseBtn');
+if (fsCloseBtnEl) {
+  fsCloseBtnEl.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (arenaFullscreen) toggleArenaFullscreen();
+  }, { passive: false });
 }
 
 if (window.visualViewport) {
