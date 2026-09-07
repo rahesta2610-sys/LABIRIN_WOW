@@ -312,7 +312,6 @@
   body.arena-fullscreen h1,
   body.arena-fullscreen #subtitle,
   body.arena-fullscreen #playerBadge,
-  body.arena-fullscreen .controls,
   body.arena-fullscreen .hint {
     display: none !important;
   }
@@ -395,9 +394,10 @@
   }
   body.arena-fullscreen #dpad.enabled {
     position: fixed;
-    bottom: 14px;
-    right: 14px;
-    left: auto;
+    bottom: 70px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     z-index: 60;
     background: rgba(5,2,12,0.45);
     padding: 8px;
@@ -408,6 +408,27 @@
   }
   body.arena-fullscreen #dpad.enabled.dpad-pressed {
     opacity: 0.55;
+  }
+  /* Tombol "Labirin Baru" ditampilkan di fullscreen, diposisikan
+     di bawah tombol digital (dpad). Tombol "Menu Awal" tetap
+     disembunyikan supaya tidak mengganggu arena. */
+  body.arena-fullscreen .controls {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 60;
+    margin: 0;
+    max-width: none;
+    width: auto;
+  }
+  body.arena-fullscreen .controls button.secondary {
+    display: none !important;
+  }
+  body.arena-fullscreen .controls button:not(.secondary) {
+    padding: 9px 16px;
+    font-size: 13px;
+    min-height: 40px;
   }
 
   #canvasWrap {
@@ -818,7 +839,7 @@
   <div id="msg"></div>
 
   <div class="controls">
-    <button class="mainbtn" onclick="newGame(true)">🔄 Labirin Baru</button>
+    <button id="btnNewMaze" class="mainbtn">🔄 Labirin Baru</button>
     <button class="mainbtn secondary" onclick="backToMenu()">🏠 Menu Awal</button>
   </div>
 
@@ -1848,6 +1869,16 @@ if (fsCloseBtnEl) {
   fsCloseBtnEl.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if (arenaFullscreen) toggleArenaFullscreen();
+  }, { passive: false });
+}
+
+/* Tombol "Labirin Baru" — tetap tersedia saat fullscreen (di bawah
+   dpad), pakai pointerdown untuk konsistensi dengan strategi WebView. */
+const btnNewMazeEl = document.getElementById('btnNewMaze');
+if (btnNewMazeEl) {
+  btnNewMazeEl.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    newGame(true);
   }, { passive: false });
 }
 
